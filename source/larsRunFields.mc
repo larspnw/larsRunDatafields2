@@ -266,21 +266,21 @@ class larsRunFields {
 		//var empspeed = 60 / (speed * 60 * 60 * METERS_TO_MILES);
 		
 		//	apply study metics to current pace
-		var gapace = 0;
+		var gaspeed = 0;
 		
 		if ( grade > 0 ) {
 			//uphill case
 			//cost is 3.3% of pace for every 1% of grade
-			gapace = speed - (speed * ((grade * 3.3)/100) );
+			gaspeed = speed + (speed * ((grade * 3.3)/100) );
 		} else {
 			//downhill case
-			gapace = speed + (speed * ((grade * -1 * 1.8)/100) );
+			gaspeed = speed - (speed * ((grade * -1 * 1.8)/100) );
 		}
 		
 		//System.println("speed/grade/gap: " + speed + " / " + grade + " / " + gapace);
 		
 		//System.println("calcGap: exit");
 		//format for min and sec
-		return gapace;
+		return gaspeed;
 	}
 }
