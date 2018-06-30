@@ -19,6 +19,11 @@ class larsRunView extends Ui.DataField {
     function onHide() {
     }
 
+    function onTimerLap() {
+   		System.println("timer pressed");
+   		 
+    }
+    
     function drawLayout(dc) {
         dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_WHITE);
         // horizontal lines
