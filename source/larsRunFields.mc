@@ -19,10 +19,18 @@ class larsRunFields {
     var time;
     var gap;
     var avgHR;
+    var startLapTime = 0;
+    var startLapDistance = 0;
+    var lapTime ;
+    var lapTimeSecs ;
+    var lapDistance ;
+    var lapPace ;
+    var lapSpeed;
     
     //GAP calc - 10 samples
     var altitudes = new[10];
 	var distances = new [10];
+	var speeds = new [10];
     
 
     function initialize() {
@@ -35,6 +43,7 @@ class larsRunFields {
         for (var i = 0; i < altitudes.size(); i++) {
         	altitudes[i] = 0.0; 
         	distances[i] = 0.0;
+        	speeds[i] = 0.0;
         }
     }
 
@@ -80,6 +89,7 @@ class larsRunFields {
             return null;
         }
 
+    	//System.println("toPace: speed= " + speed);
 
         var settings = Sys.getDeviceSettings();
         var unit = 1609; // miles
@@ -99,6 +109,20 @@ class larsRunFields {
             dist = d / 1000.0;
         } else {
             dist = d / 1609.0;
+        }
+        return dist.format("%.2f");
+    }
+    
+    function toDistDiff(d, e) {
+        if (d == null || e == null) {
+            return "0.00";
+        }
+
+        var dist;
+        if (Sys.getDeviceSettings().distanceUnits == Sys.UNIT_METRIC) {
+            dist = (d - e) / 1000.0;
+        } else {
+            dist = (d - e) / 1609.0;
         }
         return dist.format("%.2f");
     }
@@ -165,7 +189,22 @@ class larsRunFields {
 	    }
 	    	
         //distance, time, avgSpeed, avg10s        
-        var elapsed = info.elapsedTime;
+        var elapsed = info.elapsedTime - startLapTime; //calc for lap
+      
+      	var lapDist = 0;
+        if ( info.elapsedDistance != null) {
+        	lapDist = info.elapsedDistance - startLapDistance;
+        }
+       
+       	//System.println("elapsed / lapSpeed / lapDist: " + elapsed + " / " + lapSpeed + " / " + lapDist);
+       	 
+        if ( elapsed > 1000 ) {	//small #'s no bueno
+        	lapSpeed = lapDist / (elapsed/1000);
+       	} else {
+       		lapSpeed = 0;
+       	}
+       	 
+       	//System.println("lap speed / lap dist / elapsed: " + lapSpeed + " / " + lapDist + " / " + elapsed);
         var elapsedSecs = null;
 
         if (elapsed != null) {
@@ -176,18 +215,21 @@ class larsRunFields {
             }
         }
 
-        dist = toDist(info.elapsedDistance);
         hr = toStr(info.currentHeartRate);
         hrN = info.currentHeartRate;
-        timer = fmtSecs(elapsed);
-        timerSecs = elapsedSecs;
+        //paceAvg = fmtSecs(toPace(info.averageSpeed));
         pace10s =  fmtSecs(toPace(avg10s));
-        paceAvg = fmtSecs(toPace(info.averageSpeed));
         time = fmtTime(Sys.getClockTime());
-        avgHR = toStr(info.averageHeartRate);
+        //avgHR = toStr(info.averageHeartRate);
         
+        lapTime = fmtSecs(elapsed);
+        lapTimeSecs = elapsedSecs;
+        lapDistance = toDistDiff(info.elapsedDistance, startLapDistance);
+        lapPace =  fmtSecs(toPace(lapSpeed));
+       	 
         //GAP
-    	gap = fmtSecs(toPace(calcGap(info.currentSpeed, calcGrade())));
+    	gap = fmtSecs(toPace(calcGap(avg10s, calcGrade())));
+    	//BUG - this used existing pace, not 10s - gap = fmtSecs(toPace(calcGap(info.currentSpeed, calcGrade())));
     }
     
     function calcGrade() {
@@ -258,7 +300,7 @@ class larsRunFields {
 		//System.println("speed / grade: " + speed + " / " + grade);
 		
 		if ( speed == null || speed == 0 ) {
-			System.println("speed was null or 0");
+			//System.println("speed was null or 0");
 			return 0;
 		}
 		

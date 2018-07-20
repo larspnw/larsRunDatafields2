@@ -1,13 +1,35 @@
 using Toybox.WatchUi as Ui;
 using Toybox.Graphics;
 using Toybox.System as Sys;
+using Toybox.UserProfile as Up;
 
 class larsRunView extends Ui.DataField {
     hidden var fields;
+   
+   	//all are maxes except zone2 which is a min for zone 2 
+    var HRZONE2 = 120;
+    var HRZONE3 = 134;
+    var HRZONE4 = 139;
+    var HRZONE5 = 154;
 
     function initialize() {
     	DataField.initialize();
         fields = new larsRunFields(); 
+        
+        //get users HR zones
+		var profile = Up.getProfile();
+		var sport = Up.getCurrentSport();
+		var HRZones = profile.getHeartRateZones(sport);
+		if (HRZones == null) {
+			System.println("HRZones not populated, using defaults");
+		}
+		
+		HRZONE2 = HRZones[1];	
+		HRZONE3 = HRZones[2];	
+		HRZONE4 = HRZones[3];	
+		HRZONE5 = HRZones[4];	
+		
+		System.println("HR Zones 2-5 for " + sport + ": " + HRZONE2 + " / " + HRZONE3 + " / " + HRZONE4 + " / " + HRZONE5);
     }
 
     function onLayout(dc) {
@@ -20,8 +42,20 @@ class larsRunView extends Ui.DataField {
     }
 
     function onTimerLap() {
-   		System.println("timer pressed");
-   		 
+   		//System.println("timer pressed");
+   		var info = Activity.getActivityInfo();
+   		
+   		if ( info.elapsedDistance == null ) {
+   			fields.startLapDistance = 0;
+   		} else {
+   			fields.startLapDistance = info.elapsedDistance;
+   		}
+   		
+   		if ( info.elapsedTime == null ) {
+   			fields.startLapTime = 0;
+   		} else {
+   			fields.startLapTime = info.elapsedTime; 
+   		}
     }
     
     function drawLayout(dc) {
@@ -38,41 +72,38 @@ class larsRunView extends Ui.DataField {
     }
 
     function onUpdate(dc) {
+    
+    	//new layout focused on lap:
+    	//lap time, HR, lap distance, pace, lap pace, gap, 
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_WHITE);
         dc.clear();
 
-		//avg HR
-        textC(dc, 75, 60, Graphics.FONT_NUMBER_MEDIUM, fields.avgHR);
-        textC(dc, 75, 28, Graphics.FONT_XTINY,  "Avg HR");
-       
-		//pace 10s
-        textC(dc, 162, 60, Graphics.FONT_NUMBER_MEDIUM,  fields.pace10s);
-        textC(dc, 155, 28, Graphics.FONT_XTINY, "P 10s");
-	 
-		//timer
-        textC(dc, 70, 122, Graphics.FONT_NUMBER_MEDIUM,  fields.timer);
+		//lap timer
+        textC(dc, 75, 60, Graphics.FONT_NUMBER_MEDIUM, fields.lapTime);
+
+        textC(dc, 75, 60, Graphics.FONT_NUMBER_MEDIUM,  fields.lapTime);
         if (fields.timerSecs != null) {
-            var length = dc.getTextWidthInPixels(fields.timer, Graphics.FONT_NUMBER_MEDIUM);
-            textC(dc, 70 + length + 1, 122, Graphics.FONT_NUMBER_MILD, fields.timerSecs);
+            var length = dc.getTextWidthInPixels(fields.lapTimer, Graphics.FONT_NUMBER_MEDIUM);
+            textC(dc, 75 + length + 1, 60, Graphics.FONT_NUMBER_MILD, fields.lapTimerSecs);
         }
-
-        textC(dc, 75, 90, Graphics.FONT_XTINY,  "TIMER");
-
-		//cadence - remove
-		/*
-        doCadenceBackground(dc, fields.cadenceN);
-        textC(dc, 30, 107, Graphics.FONT_NUMBER_MEDIUM, fields.cadence);
-        textC(dc, 30, 79, Graphics.FONT_XTINY,  "CAD");
-		*/
-		
-		//heartrate
+        textR(dc, 117, 28, Graphics.FONT_XTINY,  "LapTime");
+      	 
+		//HR
         doHrBackground(dc, fields.hrN);
-        textC(dc, 155, 122, Graphics.FONT_NUMBER_MEDIUM, fields.hr);
-        textC(dc, 157, 90, Graphics.FONT_XTINY,  "HR");
+        textC(dc, 162, 60, Graphics.FONT_NUMBER_MEDIUM,  fields.hr);
+        textC(dc, 155, 28, Graphics.FONT_XTINY, "HR");
+	 
+		//lap distance
+        textC(dc, 70, 122, Graphics.FONT_NUMBER_MEDIUM,  fields.lapDistance);
+        textC(dc, 75, 90, Graphics.FONT_XTINY,  "Lap Dist");
 
-		//distance
-        textC(dc, 66, 169, Graphics.FONT_NUMBER_MEDIUM, fields.dist);
-        textL(dc, 54, 201, Graphics.FONT_XTINY, "DIST");
+		//pace
+        textC(dc, 163, 122, Graphics.FONT_NUMBER_MEDIUM, fields.pace10s);
+        textL(dc, 124, 90, Graphics.FONT_XTINY,  "Pace10s");
+
+		//lap pace
+        textC(dc, 66, 169, Graphics.FONT_NUMBER_MEDIUM, fields.lapPace);
+        textR(dc, 115, 201, Graphics.FONT_XTINY, "LapPace");
 
 		//GAP 10s
         textC(dc, 163, 169, Graphics.FONT_NUMBER_MEDIUM, fields.gap);
@@ -91,13 +122,13 @@ class larsRunView extends Ui.DataField {
         }
 
         var color;
-        if (hr >= 154) {
+        if (hr >= HRZONE5) {
             color = Graphics.COLOR_PURPLE;
-        } else if (hr > 139) {
+        } else if (hr > HRZONE4) {
             color = Graphics.COLOR_RED;
-        } else if (hr > 134) {
+        } else if (hr > HRZONE3) {
             color = Graphics.COLOR_YELLOW;
-        } else if (hr > 120) {
+        } else if (hr > HRZONE2) {
             color = Graphics.COLOR_GREEN;
         } else {
             color = Graphics.COLOR_BLUE;
@@ -106,7 +137,8 @@ class larsRunView extends Ui.DataField {
 		//fix spacing
         dc.setColor(color, Graphics.COLOR_TRANSPARENT);
         //dc.fillRectangle(154, 72, 65, 16);
-        dc.fillRectangle(128, 83, 65, 16);
+        //dc.fillRectangle(128, 83, 65, 16);
+        dc.fillRectangle(125, 22, 65, 16);
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
     }
 /*
