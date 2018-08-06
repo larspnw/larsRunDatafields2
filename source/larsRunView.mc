@@ -51,10 +51,10 @@ class larsRunView extends Ui.DataField {
    			fields.startLapDistance = info.elapsedDistance;
    		}
    		
-   		if ( info.elapsedTime == null ) {
+   		if ( info.timerTime == null ) {
    			fields.startLapTime = 0;
    		} else {
-   			fields.startLapTime = info.elapsedTime; 
+   			fields.startLapTime = info.timerTime; 
    		}
     }
     

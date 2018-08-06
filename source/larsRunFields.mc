@@ -189,7 +189,7 @@ class larsRunFields {
 	    }
 	    	
         //distance, time, avgSpeed, avg10s        
-        var elapsed = info.elapsedTime - startLapTime; //calc for lap
+        var elapsed = info.timerTime - startLapTime; //calc for lap
       
       	var lapDist = 0;
         if ( info.elapsedDistance != null) {
